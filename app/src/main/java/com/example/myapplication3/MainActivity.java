@@ -21,25 +21,36 @@ import io.mpos.ui.shared.model.MposUiConfiguration;
 
 public class MainActivity extends AppCompatActivity {
 
-    @Override
+
     private String transactionID;
 
+    @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
     }
 
-    public void buttonPayClick(View v)
-    {
-        TextView tv = (TextView)findViewById(R.id.textView);
-        tv.setText("Payworks Pay");
-    }
 
     public void buttonRefundClick(View v)
     {
         TextView tv = (TextView)findViewById(R.id.textView);
         tv.setText("Payworks Refund");
+
+        MposUi ui = MposUi.initialize(this, ProviderMode.MOCK,
+                "merchantIdentifier", "merchantSecretKey");
+
+        TransactionParameters transactionParameters = new TransactionParameters.Builder()
+                .refund(transactionID)
+                // For partial refunds, specify the amount to be refunded
+                // and the currency from the original transaction
+                .amountAndCurrency(new BigDecimal("1.00"), io.mpos.transactions.Currency.EUR)
+                .build();
+        Intent intent = ui.createTransactionIntent(transactionParameters);
+        startActivityForResult(intent, MposUi.REQUEST_CODE_PAYMENT);
+
+
     }
+
     public void paymentButtonClicked(View v) {
 
         MposUi ui = MposUi.initialize(this, ProviderMode.MOCK,
@@ -87,6 +98,7 @@ public class MainActivity extends AppCompatActivity {
         Intent intent = ui.createTransactionIntent(transactionParameters);
         startActivityForResult(intent, MposUi.REQUEST_CODE_PAYMENT);
     }
+
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
 
@@ -101,6 +113,10 @@ public class MainActivity extends AppCompatActivity {
                 transactionID = transaction.getIdentifier();
 
                 Toast.makeText(this, transactionID , Toast.LENGTH_LONG).show();
+                TextView tv = (TextView)findViewById(R.id.textView);
+
+                tv.setText(transactionID);
+
             } else {
                 // Card was declined, or transaction was aborted, or failed
                 // (e.g. no internet or accessory not found)
